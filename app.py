@@ -27,15 +27,10 @@ def vill_count(g):
 
 def get_villager_ids(g):
     """ returns ids of all pro town """
-    v_list = []
-    for id in g.keys():
-        if g[id] == 'v':
-            v_list.append(id)
-        elif g[id] == 'b':
-            v_list.append(id)
-        elif g[id] == 's': # seer is pro town
-            v_list.append(id)
-    return v_list
+    return [id for id in g.keys()
+                    if g[id]=='v' or
+                       g[id]=='b' or
+                       g[id]=='s']
 
 def all_ids(g):
     return g.keys()
