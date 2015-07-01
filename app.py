@@ -212,7 +212,6 @@ def new_game_setup(config):
 
 def run_sim(config, n_trials):
     for i in range(n_trials):
-        global game_state # mehh
         game_state = reset_state()
         config['game_over'] = False # reset game
         players = new_game_setup(config)
@@ -278,14 +277,25 @@ def guard_comparison_sim():
 w_s_config = {
     'game_over': False,
     'num_w': 4,
-    'num_v': 18,
+    'num_v': 19,
     'num_b': 0,
     'num_s': 1
 }
 
+global game_state # meh
 # sim 1
 results = reset_results() # results is global durr
 game_state = reset_state()
 run_sim(w_s_config, 10000)
+print(results)
+
+w_s_config['num_b'] = 1 # add bodyguard
+w_s_config['num_v'] -= 1 # remove a plain villager
+# sim 2
+results = reset_results() # results is global durr
+game_state = reset_state()
+run_sim(w_s_config, 10000)
+
+
 print(results)
 
