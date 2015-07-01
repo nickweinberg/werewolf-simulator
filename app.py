@@ -33,6 +33,8 @@ def get_villager_ids(g):
             v_list.append(id)
         elif g[id] == 'b':
             v_list.append(id)
+        elif g[id] == 's': # seer is pro town
+            v_list.append(id)
     return v_list
 
 def all_ids(g):
@@ -48,6 +50,7 @@ def is_wolf(g, id):
     else:
         return False
 
+# guard fn's
 def is_guard(g, id):
     if g[id] == 'b':
         return True
@@ -57,9 +60,9 @@ def is_guard(g, id):
 def guard_pick(g):
     """ pick someone randomly not himself """
     guard_id = game_state['guard_id']
-    guard_pick = random_pick(
+    protected_id = random_pick(
                     remove_id(all_ids(g), guard_id))
-    return guard_pick
+    return protected_id
 
 def is_guard_alive(g):
     guard_id = game_state.get('guard_id', False)
@@ -70,6 +73,15 @@ def is_guard_alive(g):
             return False
     else:
         return False
+
+# seer functions
+def seer_pick(g):
+    """ probably could compose same pick fn as guard """
+    seer_id = game_state['seer_id']
+    investigated_id = random_pick(
+            remove_id(all_ids(g), seer_id))
+    return investigated_id
+
 
 
 def random_pick(id_list):
@@ -130,8 +142,16 @@ def new_game_setup(config):
     curr_index += config['num_w']
 
     if config.get('num_b') > 0:
+        # if we have a guard, add him to game durr
         players[curr_index] = 'b'
         game_state['guard_id'] = curr_index
+        curr_index += 1 # only can be one body guard...or not??
+    if cofig.get('num_s') > 0:
+        players[curr_index] = 's'
+        game_state['seer_id'] = curr_index
+        curr_index += 1 # only one seer
+
+
     return players
 
 def run_sim(config, n_trials):
@@ -155,36 +175,60 @@ def reset_results():
     return {'v_win': 0, 'w_win': 0}
 
 def reset_state():
+    """
+    game state will hold
+    id of bodyguard
+    id of seer
+    id and role of seer's revealed roles
+    """
     return {}
 
 
-no_b_config = {
-        'game_over': False,
-        'num_w': 4,
-        'num_v': 16,
-        'num_b': 0
-}
+def guard_comparison_sim():
+    no_b_config = {
+            'game_over': False,
+            'num_w': 4,
+            'num_v': 18,
+            'num_b': 0
+    }
 
 
 
-w_b_config = {
-        'game_over': False,
-        'num_w': 4,
-        'num_v': 15,
-        'num_b': 1 #bodyguard
+    w_b_config = {
+            'game_over': False,
+            'num_w': 4,
+            'num_v': 17,
+            'num_b': 1 #bodyguard
+    }
+
+    # sim 1
+    results = reset_results()
+    game_state = reset_state()
+    run_sim(no_b_config, 10000)
+    no_b_results = results
+
+    # sim 2
+    results = reset_results()
+    game_state = reset_state()
+    run_sim(w_b_config, 10000)
+    w_b_results = results
+
+    print('no bodyguard', no_b_results)
+    print('w. bodyguard', w_b_results)
+
+
+# lets try with a seer now
+w_s_config = {
+    'game_over': False,
+    'num_w': 4,
+    'num_v': 18,
+    'num_b': 0,
+    'num_s': 1
 }
 
 # sim 1
-results = reset_results()
+results = reset_results() # results is global durr
 game_state = reset_state()
-run_sim(no_b_config, 10000)
-no_b_results = results
+run_sim(w_s_config, 100)
+print(results)
 
-# sim 2
-results = reset_results()
-game_state = reset_state()
-run_sim(w_b_config, 10000)
-w_b_results = results
-
-print('no bodyguard', no_b_results)
-print('w. bodyguard', w_b_results)
