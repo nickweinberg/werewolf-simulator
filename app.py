@@ -23,14 +23,19 @@ def wolf_count(g):
 def vill_count(g):
     plain = g.values().count('v')
     bodyguard = g.values().count('b')
-    return plain + bodyguard
+    seer = g.values().count('s')
+    chupa = g.values().count('c') # chupa counts as villager for now.
+    return plain + bodyguard + chupa + seer
 
 def get_villager_ids(g):
     """ returns ids of all pro town """
     return [id for id in g.keys()
-                    if g[id]=='v' or
-                       g[id]=='b' or
-                       g[id]=='s']
+                    if g[id] in ('v', 'b', 's', 'c')]
+
+
+def get_wolf_ids(g):
+    return [id for id in g.keys()
+                    if g[id] == 'w']
 
 def all_ids(g):
     return g.keys()
@@ -68,6 +73,7 @@ def is_guard_alive(g):
             return False
     else:
         return False
+
 
 # seer functions
 def seer_pick(g):
@@ -108,7 +114,6 @@ def resolve_seer_pick(g, id):
         game_state['s_prev_night_id'] = id
 
 
-
 def random_pick(id_list):
     """ here to add custom logic for scum quotients etc.
      ie logic for why some person more likely to get picked
@@ -120,12 +125,17 @@ def random_pick(id_list):
      """
     return random.choice(id_list)
 
-def get_wolf_ids(g):
-    w_list = []
-    for id in g.keys():
-        if g[id] == 'v':
-            w_list.append(id)
-    return w_list
+
+def is_chupa_alive(g):
+    chupa_id = game_state.get('chupa_id', False)
+    if chupa_id:
+        if g.get(chupa_id) == 'c':
+            return True
+        else:
+            return False
+    else:
+        return False
+
 
 def day_round(g):
     # day
@@ -159,6 +169,10 @@ def night_round(g):
     """
     d = random_pick(get_villager_ids(g))
 
+    # if chupa is alive
+    if is_chupa_alive(g):
+        # he picks a dude
+        c_pick = random_pick(get_wolf_ids(g))
     # if guard is alive
     if is_guard_alive(g):
         # he picks a dude
@@ -182,6 +196,12 @@ def night_round(g):
 
 
 def new_game_setup(config):
+    """
+    players {}
+
+    currently
+
+    """
     # quick setup
     players = {}
     curr_index = config['num_v']
@@ -202,6 +222,10 @@ def new_game_setup(config):
         players[curr_index] = 's'
         game_state['seer_id'] = curr_index
         curr_index += 1 # only one seer
+    if config.get('num_c') > 0: #chupa in the game
+        players[curr_index] = 'c'
+        game_state['chupa_id'] = curr_index
+        curr_index += 1
 
     return players
 
@@ -271,26 +295,30 @@ def guard_comparison_sim():
 # lets try with a seer now
 w_s_config = {
     'game_over': False,
-    'num_w': 4,
-    'num_v': 19,
-    'num_b': 0,
-    'num_s': 1
+    'num_w': 3,
+    'num_v': 15,
+    'num_b': 1,
+    'num_s': 1,
+    'num_c': 1 # chupa
 }
 
 global game_state # meh
 # sim 1
 results = reset_results() # results is global durr
 game_state = reset_state()
-run_sim(w_s_config, 10000)
+run_sim(w_s_config, 1000000)
 print(results)
-
-w_s_config['num_b'] = 1 # add bodyguard
+print(w_s_config)
+"""
+w_s_config['num_s'] = 1 # add bodyguard
 w_s_config['num_v'] -= 1 # remove a plain villager
 # sim 2
 results = reset_results() # results is global durr
 game_state = reset_state()
 run_sim(w_s_config, 10000)
+"""
 
+# print(results)
 
-print(results)
+# July 1st, 2015. Currently
 
