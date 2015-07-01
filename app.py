@@ -82,10 +82,47 @@ def seer_pick(g):
             remove_id(all_ids(g), seer_id))
     return investigated_id
 
+def is_seer_alive(g):
+    seer_id = game_state.get('seer_id', False)
+    if seer_id:
+        if g.get(seer_id) == 's':
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+def resolve_seer_pick(g, id):
+    """
+    seer investigated player, id.
+    add info to game_state['seer_info']
+    {'id': 1, 'affiliation': 'w'}
+
+    """
+    info_dict = {'id': id, 'affiliation': g[id]}
+    # super hacky
+    if info_dict['affiliation'] == 'b':
+        info_dict['affiliation'] = 'v'
+    elif info_dict['affiliation'] == 'c': # chupa looks like villager
+        info_dict['affiliation'] = 'v'
+
+    game_state['seer_info'].append(info_dict)
+    if info_dict['affiliation'] == 'w':
+        game_state['s_found_w_prev_night'] = True
+        game_state['s_prev_night_id'] = id
+
 
 
 def random_pick(id_list):
-    # here to add custom logic for scum quotients etc.
+    """ here to add custom logic for scum quotients etc.
+     ie logic for why some person more likely to get picked
+     over another.
+     - One idea is for werewolves to all be X% more likely to get
+     killed during the day to be more realistic.
+     - Or fn(n)% more likly where n is days passed, and fn
+     some function (MAYBE EXPONENTIAL!?)
+     """
     return random.choice(id_list)
 
 def get_wolf_ids(g):
@@ -97,15 +134,25 @@ def get_wolf_ids(g):
 
 def day_round(g):
     # day
-    # kill one random player
-    d = random_pick(g.keys())
-    # if guard is alive
-    g = kill_player(g, d)
+    """ if seer found wolf prev night, out and kill that wolf """
+    if is_seer_alive(g):
+        if game_state['s_found_w_prev_night']:
+            wolf_id = game_state['s_prev_night_id']
+            game_state['s_found_w_prev_night'] = False
+            g = kill_player(g, wolf_id)
+        else:
+            d = random_pick(g.keys())
+            g = kill_player(g, d)
+    else:
+        # kill one random player
+        d = random_pick(g.keys())
+        # if guard is alive
+        g = kill_player(g, d)
 
     return g
 
 def kill_player(g, player_id):
-    # remove player_id from g
+    # remove player_id from player dictionary g
     del g[player_id]
     return g
 
@@ -126,8 +173,18 @@ def night_round(g):
     if g_pick != d:
         g = kill_player(g, d)
     else:
-        pass
+        pass # no one dies
+
+    # if seer is alive
+    if is_seer_alive(g):
+        # he picks a dude to investigate
+        s_pick = seer_pick(g)
+        resolve_seer_pick(g, s_pick)
+    else:
+        s_pick = 'seer is dead'
+
     return g
+
 
 def new_game_setup(config):
     # quick setup
@@ -146,17 +203,17 @@ def new_game_setup(config):
         players[curr_index] = 'b'
         game_state['guard_id'] = curr_index
         curr_index += 1 # only can be one body guard...or not??
-    if cofig.get('num_s') > 0:
+    if config.get('num_s') > 0:
         players[curr_index] = 's'
         game_state['seer_id'] = curr_index
         curr_index += 1 # only one seer
-
 
     return players
 
 def run_sim(config, n_trials):
     for i in range(n_trials):
-
+        global game_state # mehh
+        game_state = reset_state()
         config['game_over'] = False # reset game
         players = new_game_setup(config)
         while True:
@@ -181,7 +238,8 @@ def reset_state():
     id of seer
     id and role of seer's revealed roles
     """
-    return {}
+    return {'seer_info':[],
+            's_found_w_prev_night':False}
 
 
 def guard_comparison_sim():
@@ -201,15 +259,14 @@ def guard_comparison_sim():
             'num_b': 1 #bodyguard
     }
 
+
     # sim 1
     results = reset_results()
-    game_state = reset_state()
     run_sim(no_b_config, 10000)
     no_b_results = results
 
     # sim 2
     results = reset_results()
-    game_state = reset_state()
     run_sim(w_b_config, 10000)
     w_b_results = results
 
@@ -229,6 +286,6 @@ w_s_config = {
 # sim 1
 results = reset_results() # results is global durr
 game_state = reset_state()
-run_sim(w_s_config, 100)
+run_sim(w_s_config, 10000)
 print(results)
 
