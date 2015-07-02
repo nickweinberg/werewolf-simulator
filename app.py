@@ -177,7 +177,6 @@ def night_round(g):
         g_pick = 'guard is dead'
     # if chupa is alive
 
-
     if is_chupa_alive(g):
         """ he picks a dude
         # picks a random player (not himself)
@@ -187,25 +186,38 @@ def night_round(g):
         """
         c_pick = random_pick(
                     remove_id(all_ids(g), game_state['chupa_id']))
+        is_c_pick_wolf = c_pick in get_wolf_ids(g)
+    else:
+        c_pick = None
+        is_c_pick_wolf = False
 
-        # guard save logic
-        if wolf_pick == c_pick:
-            # they picked same player
-            if g_pick == wolf_pick:
-                pass # guard blocks both
+    # guard save logic
+    if wolf_pick == c_pick:
+        # they picked same player
+        if g_pick == wolf_pick or g_pick == c_pick:
+            pass # guard blocks both
         else:
-            if g_pick == wolf_pick:
-                g = kill_player(g, c_pick) # guard blocks wolf, didn't block chupa
-            elif g_pick == c_pick:
-                g = kill_player(g, wolf_pick) # guard blocks chupa, not wolf
-            else:
-                pass # logically didn't save anyone
+            # wolf_pick dies
+            g = kill_player(g, wolf_pick)
+            if is_c_pick_wolf:
+                g = kill_player(g, c_pick) # chupa eats wolf
+    elif g_pick != wolf_pick and g_pick != c_pick:
+        g = kill_player(g, wolf_pick) # kill both picks
+        if is_c_pick_wolf:
+            g = kill_player(g, c_pick)
+    elif g_pick == wolf_pick and is_c_pick_wolf: # only kill chupa pick
+        g = kill_player(g, c_pick)
+    elif g_pick == c_pick: # only kill wolf_pick
+        g = kill_player(g, wolf_pick)
+
 
     # if seer is alive
     if is_seer_alive(g):
         # he picks a dude to investigate
-        s_pick = seer_pick(g)
-        resolve_seer_pick(g, s_pick)
+        # make sure enough players left in game
+        if len(all_ids(g)) > 1: # more than 1 person other than seer
+            s_pick = seer_pick(g)
+            resolve_seer_pick(g, s_pick)
     else:
         s_pick = 'seer is dead'
 
@@ -313,7 +325,7 @@ def guard_comparison_sim():
 w_s_config = {
     'game_over': False,
     'num_w': 4,
-    'num_v': 15,
+    'num_v': 13,
     'num_b': 1,
     'num_s': 1,
     'num_c': 1 # chupa
