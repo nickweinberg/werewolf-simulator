@@ -167,22 +167,39 @@ def night_round(g):
     seer pick randomly
     bodyguard pick randomly
     """
-    d = random_pick(get_villager_ids(g))
+    wolf_pick = random_pick(get_villager_ids(g))
 
-    # if chupa is alive
-    if is_chupa_alive(g):
-        # he picks a dude
-        c_pick = random_pick(get_wolf_ids(g))
     # if guard is alive
     if is_guard_alive(g):
         # he picks a dude
         g_pick = guard_pick(g)
     else:
         g_pick = 'guard is dead'
-    if g_pick != d:
-        g = kill_player(g, d)
-    else:
-        pass # no one dies
+    # if chupa is alive
+
+
+    if is_chupa_alive(g):
+        """ he picks a dude
+        # picks a random player (not himself)
+        if that player is a werewolf,
+            then that player dies.
+
+        """
+        c_pick = random_pick(
+                    remove_id(all_ids(g), game_state['chupa_id']))
+
+        # guard save logic
+        if wolf_pick == c_pick:
+            # they picked same player
+            if g_pick == wolf_pick:
+                pass # guard blocks both
+        else:
+            if g_pick == wolf_pick:
+                g = kill_player(g, c_pick) # guard blocks wolf, didn't block chupa
+            elif g_pick == c_pick:
+                g = kill_player(g, wolf_pick) # guard blocks chupa, not wolf
+            else:
+                pass # logically didn't save anyone
 
     # if seer is alive
     if is_seer_alive(g):
@@ -295,7 +312,7 @@ def guard_comparison_sim():
 # lets try with a seer now
 w_s_config = {
     'game_over': False,
-    'num_w': 3,
+    'num_w': 4,
     'num_v': 15,
     'num_b': 1,
     'num_s': 1,
@@ -306,7 +323,7 @@ global game_state # meh
 # sim 1
 results = reset_results() # results is global durr
 game_state = reset_state()
-run_sim(w_s_config, 1000000)
+run_sim(w_s_config, 10000)
 print(results)
 print(w_s_config)
 """
